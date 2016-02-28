@@ -1,6 +1,15 @@
 # SocketCandecodeSignals
 filter to decode signals in combination with candump (socketcan tools)
 
+#clone#
+```
+git clone  https://github.com/ebroecker/SocketCandecodeSignals
+git submodule update --init
+```
+or
+```
+git clone --recursive https://github.com/ebroecker/SocketCandecodeSignals
+```
 
 #Compile#
 ```gcc -g -o socketcanDecodeSignal main.c datenbasis.c processFrame.c lib.c```
