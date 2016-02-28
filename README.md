@@ -2,22 +2,27 @@
 filter to decode signals in combination with candump (socketcan tools)
 
 
-*Compile:*
-gcc -g -o socketcanDecodeSignal main.c datenbasis.c processFrame.c lib.c 
+#Compile#
+```gcc -g -o socketcanDecodeSignal main.c datenbasis.c processFrame.c lib.c```
 
-*Test with vitual can*
-**prepare virtual can:**
+#Test with vitual can#
+##prepare virtual can:##
+```
 sudo modprobe vcan
 sudo ip link add type vcan
 sudo ifconfig vcan0 up
+```
 
-
-**dump vcan0 with signal decoding:**
+##dump vcan0 with signal decoding:##
+```
 candump -L vcan0 | ./socketcanDecodeSignal ccl_test.dbc testFrame1 testFrame2
+```
 
-**send some can frames (other terminal)**
+##send some can frames (other terminal)##
+```
 cansend vcan0 001#8d00100100820100
 cansend vcan0 002#0C00057003CD1F83
+```
 
 **will result:**
 ```
@@ -51,8 +56,11 @@ Trying to find: Frame: testFrame2
 ```
 
 
-*Test without virtualcan:*
+#Test without virtual can:#
+```
 echo "(0.0) vcan0 001#8d00100100820100" | ./socketcanDecodeSignal ccl_test.dbc testFrame1
+```
+
 ```
 Trying to find: Frame: testFrame1
 -- testFrame1 (0x001) 
@@ -69,7 +77,10 @@ Trying to find: Frame: testFrame1
 (0000.000000) vcan0 sig10: 0x00 00 
 ```
 
+```
 echo "(0.0) vcan0 001#8d00100100820100" | ./socketcanDecodeSignal ccl_test.dbc testFrame1
+```
+
 ```
 Trying to find: Frame: testFrame2
 -- testFrame2 (0x002) 
