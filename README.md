@@ -14,26 +14,35 @@ git clone --recursive https://github.com/ebroecker/SocketCandecodeSignals
 #Compile#
 ```gcc -g -o socketcanDecodeSignal main.c datenbasis.c processFrame.c lib.c```
 
-#Test with vitual can#
-##prepare virtual can:##
+##Usage##
+```
+candump -L canBus | ./socketcanDecodeSignal dbc-file frameName[.signalName] [secondFrame[.someSignal] ...]
+```
+***Example***
+```
+candump -L vcan0 | ./socketcanDecodeSignal ccl_test.dbc testFrame1.sig0 testFrame2
+```
+
+#Test#
+***prepare virtual can:***
 ```
 sudo modprobe vcan
 sudo ip link add type vcan
 sudo ifconfig vcan0 up
 ```
 
-##dump vcan0 with signal decoding:##
+***dump vcan0 with signal decoding:***
 ```
 candump -L vcan0 | ./socketcanDecodeSignal ccl_test.dbc testFrame1 testFrame2
 ```
 
-##send some can frames (other terminal)##
+***send some can frames (other terminal)***
 ```
 cansend vcan0 001#8d00100100820100
 cansend vcan0 002#0C00057003CD1F83
 ```
 
-**will result:**
+***will result:***
 ```
 Trying to find: Frame: testFrame1
 -- testFrame1 (0x001) 
@@ -65,7 +74,7 @@ Trying to find: Frame: testFrame2
 ```
 
 
-#Test without virtual can:#
+***Test without virtual can:***
 ```
 echo "(0.0) vcan0 001#8d00100100820100" | ./socketcanDecodeSignal ccl_test.dbc testFrame1
 ```
