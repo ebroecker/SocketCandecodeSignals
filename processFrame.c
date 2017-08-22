@@ -4,6 +4,8 @@
 #include "libcan-encode-decode/include/can_encode_decode_inl.h"
 
 
+float toPhysicalValue(uint64_t target, float factor, float offset, bool is_signed);
+uint64_t extractSignal(const uint8_t* frame, const uint8_t startbit, const uint8_t length, bool is_big_endian, bool is_signed);
 
 void add_callback(struct signal_callback_list **callbackList, 
 			struct frame_struct *frame, struct signal_struct *signal,
