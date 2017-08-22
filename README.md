@@ -1,7 +1,7 @@
 # SocketCandecodeSignals
 filter to decode signals in combination with candump (socketcan tools)
 
-#clone#
+# clone #
 ```
 git clone  https://github.com/ebroecker/SocketCandecodeSignals
 git submodule update --init
@@ -11,10 +11,10 @@ or
 git clone --recursive https://github.com/ebroecker/SocketCandecodeSignals
 ```
 
-#Compile#
+# Compile #
 ```gcc -g -o socketcanDecodeSignal main.c datenbasis.c processFrame.c lib.c```
 
-##Usage##
+## Usage ##
 ```
 candump -L canBus | ./socketcanDecodeSignal dbc-file frameName[.signalName] [secondFrame[.someSignal] ...]
 ```
@@ -23,7 +23,7 @@ candump -L canBus | ./socketcanDecodeSignal dbc-file frameName[.signalName] [sec
 candump -L vcan0 | ./socketcanDecodeSignal ccl_test.dbc testFrame1.sig0 testFrame2
 ```
 
-#Test#
+# Test #
 ***prepare virtual can:***
 ```
 sudo modprobe vcan
