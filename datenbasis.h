@@ -20,7 +20,9 @@ struct signal_struct {
 	float max;
 	char unit[80];
 	char receiverList[512];
-
+        __u8 isMultiplexer;
+        __u8 muxId;
+        
 	__u8 number;
 	UT_hash_handle hh;
 };
@@ -28,6 +30,7 @@ struct signal_struct {
 struct frame_struct {
 	canid_t canID;
 	char name[80];
+        __u8 isMultiplexed;
 	struct signal_struct *signals;
 	UT_hash_handle hh;
 };
@@ -41,6 +44,6 @@ struct frame_struct *find_frame(struct frame_struct *db, int canID);
 struct frame_struct *find_frame_by_name(struct frame_struct *db, char *name);
 struct signal_struct *find_signal_by_name(struct frame_struct *frame, char *name);
 struct frame_struct *find_frame_by_signalname(struct frame_struct *db, char *name);
-void add_signal(struct frame_struct *db, int frameId, char *signalName, int startBit, int signalLength, int byteOrder, int signedState, float factor, float offset, float min, float max, char *unit, char *receiverList);
+void add_signal(struct frame_struct *db, int frameId, char *signalName, int startBit, int signalLength, int byteOrder, int signedState, float factor, float offset, float min, float max, char *unit, char *receiverList, unsigned char isMultiplexer, unsigned char muxId);
 int readInDatabase(struct frame_struct **db, char *Filename);
 

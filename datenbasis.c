@@ -8,6 +8,7 @@ void add_frame(struct frame_struct **db, canid_t canID, char *frameName) {
 	s->canID = canID;
 	s->signals = NULL;
 	strcpy(s->name, frameName);
+        s->isMultiplexed = 0;   
 	HASH_ADD_INT( *db, canID, s );
 }
 
@@ -53,7 +54,7 @@ struct frame_struct *find_frame_by_signalname(struct frame_struct *db, char *nam
 	/* s: output pointer */
 }
 
-void add_signal(struct frame_struct *db, int frameId, char *signalName, int startBit, int signalLength, int is_big_endian, int signedState, float factor, float offset, float min, float max, char *unit, char *receiverList)
+void add_signal(struct frame_struct *db, int frameId, char *signalName, int startBit, int signalLength, int is_big_endian, int signedState, float factor, float offset, float min, float max, char *unit, char *receiverList, unsigned char isMultiplexer, unsigned char muxId)
 {
 	struct frame_struct *frame;
 	struct signal_struct *newSignal;
@@ -70,6 +71,14 @@ void add_signal(struct frame_struct *db, int frameId, char *signalName, int star
 	newSignal->offset = offset;
 	newSignal->min = min;
 	newSignal->max = max;
+        
+        
+        if(isMultiplexer > 0)
+        {
+            frame->isMultiplexed = 1;
+        }
+        newSignal->isMultiplexer = isMultiplexer;
+        newSignal->muxId = muxId;
 	
 	strcpy(newSignal->unit, unit);
 	strcpy(newSignal->receiverList, receiverList);
@@ -85,7 +94,8 @@ int readInDatabase(struct frame_struct **db, char *Filename)
 	char signalName[512],signedState, unit[512], receiverList[512];
 	int startBit=0,signalLength=0,byteOrder=0;
 	float factor=0., offset=0., min=0., max=0.;
-
+        char mux[4];
+        int muxId = 0;
 
 	int frameId=0, len;
 
@@ -105,24 +115,53 @@ int readInDatabase(struct frame_struct **db, char *Filename)
 		}
 		else if(sscanf(line," SG_ %s : %d|%d@%d%c (%f,%f) [%f|%f] %s %s",signalName, &startBit, &signalLength,&byteOrder, &signedState, &factor, &offset, &min, &max, unit, receiverList ) > 5)
 		{
-            if (byteOrder == 0)
-            {
-                // following code is from https://github.com/julietkilo/CANBabel/blob/master/src/main/java/com/github/canbabel/canio/dbc/DbcReader.java:
+                    if (byteOrder == 0)
+                    {
+                        // following code is from https://github.com/julietkilo/CANBabel/blob/master/src/main/java/com/github/canbabel/canio/dbc/DbcReader.java:
 
-                int pos = 7 - (startBit % 8) + (signalLength - 1);
-                if (pos < 8)
-                {
-                    startBit = startBit - signalLength + 1;
-                }
-                else
-                {
-                    int cpos = 7 - (pos % 8);
-                    int bytes = (int)(pos / 8);
-                    startBit = cpos + (bytes * 8) + (int)(startBit/8) * 8;
-                }
-            }
-            
-			add_signal(*db, frameId, signalName, startBit, signalLength, byteOrder == 0, signedState == '-', factor, offset, min, max, unit, receiverList);		
+                        int pos = 7 - (startBit % 8) + (signalLength - 1);
+                        if (pos < 8)
+                        {
+                            startBit = startBit - signalLength + 1;
+                        }
+                        else
+                        {
+                            int cpos = 7 - (pos % 8);
+                            int bytes = (int)(pos / 8);
+                            startBit = cpos + (bytes * 8) + (int)(startBit/8) * 8;
+                        }
+                    }
+                    add_signal(*db, frameId, signalName, startBit, signalLength, byteOrder == 0, signedState == '-', factor, offset, min, max, unit, receiverList, 0,0);		
+		}
+		else if(sscanf(line," SG_ %s %s : %d|%d@%d%c (%f,%f) [%f|%f] %s %s",signalName, mux, &startBit, &signalLength,&byteOrder, &signedState, &factor, &offset, &min, &max, unit, receiverList ) > 5)
+		{
+                    if (byteOrder == 0)
+                    {
+                        // following code is from https://github.com/julietkilo/CANBabel/blob/master/src/main/java/com/github/canbabel/canio/dbc/DbcReader.java:
+
+                        int pos = 7 - (startBit % 8) + (signalLength - 1);
+                        if (pos < 8)
+                        {
+                            startBit = startBit - signalLength + 1;
+                        }
+                        else
+                        {
+                            int cpos = 7 - (pos % 8);
+                            int bytes = (int)(pos / 8);
+                            startBit = cpos + (bytes * 8) + (int)(startBit/8) * 8;
+                        }
+                    }
+                    if(mux[0] == 'M')
+                    {
+                        add_signal(*db, frameId, signalName, startBit, signalLength, byteOrder == 0, signedState == '-', factor, offset, min, max, unit, receiverList, 1, 0);
+                    }
+                    else if(mux[0] == 'm')
+                    {
+                        sscanf(mux, "m%d", &muxId);
+                        add_signal(*db, frameId, signalName, startBit, signalLength, byteOrder == 0, signedState == '-', factor, offset, min, max, unit, receiverList, 2, muxId);
+                        
+                    }
+                    
 		}
 	}
 	return 0;
