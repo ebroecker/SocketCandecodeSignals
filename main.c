@@ -35,6 +35,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	// read dbc
 	if (readInDatabase(&dataBase, argv[1]))
 	{
 		fprintf(stderr, "Error opening Database %s\n", argv[1]);
@@ -43,6 +44,7 @@ int main(int argc, char **argv)
 	argc--;
 	argv++;
 
+	// parse arguments (frames/signals which should be decoded)
 	while (argc >= 2)
 	{
 
@@ -65,7 +67,7 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 
-		if (signalName != NULL)
+		if (NULL != signalName)
 		{
 			mySignal = find_signal_by_name(myFrame, signalName);
 			if (!mySignal)
@@ -100,8 +102,9 @@ int main(int argc, char **argv)
 		}
 
 		if (parse_canframe(ascframe, &cf))
+		{
 			return 1;
-
+		}
 		processFrame(callbackList, &cf, tv, device);
 	}
 
