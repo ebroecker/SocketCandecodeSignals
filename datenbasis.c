@@ -8,7 +8,7 @@ void add_frame(struct frame_struct **db, canid_t canID, char *frameName) {
 	s->canID = canID;
 	s->signals = NULL;
 	strcpy(s->name, frameName);
-        s->isMultiplexed = 0;   
+        s->isMultiplexed = 0;
 	HASH_ADD_INT( *db, canID, s );
 }
 
@@ -60,7 +60,7 @@ void add_signal(struct frame_struct *db, int frameId, char *signalName, int star
 	struct signal_struct *newSignal;
 
 	frame = find_frame(db, frameId);
-	
+
 	newSignal = malloc(sizeof(struct signal_struct));
 	strcpy(newSignal->name, signalName);
 	newSignal->startBit = startBit;
@@ -71,15 +71,15 @@ void add_signal(struct frame_struct *db, int frameId, char *signalName, int star
 	newSignal->offset = offset;
 	newSignal->min = min;
 	newSignal->max = max;
-        
-        
+
+
         if(isMultiplexer > 0)
         {
             frame->isMultiplexed = 1;
         }
         newSignal->isMultiplexer = isMultiplexer;
         newSignal->muxId = muxId;
-	
+
 	strcpy(newSignal->unit, unit);
 	strcpy(newSignal->receiverList, receiverList);
 
@@ -110,7 +110,7 @@ int readInDatabase(struct frame_struct **db, char *Filename)
 	{
 		if(sscanf(line," BO_ %d %s %d %s",&frameId,frameName,&len,sender) == 4)
 		{
-			frameName[strlen(frameName)-1] = 0;			
+			frameName[strlen(frameName)-1] = 0;
 			add_frame(db, frameId, frameName);
 		}
 		else if(sscanf(line," SG_ %s : %d|%d@%d%c (%f,%f) [%f|%f] %s %s",signalName, &startBit, &signalLength,&byteOrder, &signedState, &factor, &offset, &min, &max, unit, receiverList ) > 5)
@@ -131,7 +131,7 @@ int readInDatabase(struct frame_struct **db, char *Filename)
                             startBit = cpos + (bytes * 8) + (int)(startBit/8) * 8;
                         }
                     }
-                    add_signal(*db, frameId, signalName, startBit, signalLength, byteOrder == 0, signedState == '-', factor, offset, min, max, unit, receiverList, 0,0);		
+                    add_signal(*db, frameId, signalName, startBit, signalLength, byteOrder == 0, signedState == '-', factor, offset, min, max, unit, receiverList, 0,0);
 		}
 		else if(sscanf(line," SG_ %s %s : %d|%d@%d%c (%f,%f) [%f|%f] %s %s",signalName, mux, &startBit, &signalLength,&byteOrder, &signedState, &factor, &offset, &min, &max, unit, receiverList ) > 5)
 		{
@@ -159,10 +159,40 @@ int readInDatabase(struct frame_struct **db, char *Filename)
                     {
                         sscanf(mux, "m%d", &muxId);
                         add_signal(*db, frameId, signalName, startBit, signalLength, byteOrder == 0, signedState == '-', factor, offset, min, max, unit, receiverList, 2, muxId);
-                        
+
                     }
-                    
+
 		}
 	}
 	return 0;
+}
+
+void releaseResource(struct frame_struct **db)
+{
+  struct frame_struct *frame;
+  struct signal_struct *signals;
+  for (frame = *db; frame != NULL;)
+  {
+    struct frame_struct *temp = frame;
+    frame = (struct frame_struct *)frame->hh.next;
+    // free or delete
+    for (signals = temp->signals; signals != NULL;)
+    {
+      struct signal_struct *signal_temp = signals;
+      signals = (struct signal_struct *)signals->hh.next;
+
+      HASH_DEL(temp->signals, signal_temp);
+      free(signal_temp);
+      signal_temp = NULL;
+    }
+
+    HASH_DEL(*db, temp);
+    free(temp->signals);
+    temp->signals = NULL;
+    free(temp);
+    temp = NULL;
+  }
+
+  free(*db);
+  *db = NULL;
 }

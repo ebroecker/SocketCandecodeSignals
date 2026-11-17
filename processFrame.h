@@ -13,10 +13,12 @@ struct signal_callback_list {
 	UT_hash_handle hh;
 };
 
-void add_callback(struct signal_callback_list **callbackList, 
+void add_callback(struct signal_callback_list **callbackList,
 			struct frame_struct *frame, struct signal_struct *signal,
 			void  (*callback)(char *, __u64, double, struct timeval, char *device), __u8 onChange);
-			
+
 void processFrame(struct signal_callback_list *callbackList, struct can_frame *cf, struct timeval tv, char *device);
+
+void releaseSignalCallbackResource(struct signal_callback_list **cb_list);
 
 #endif

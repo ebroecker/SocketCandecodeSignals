@@ -26,6 +26,8 @@ int main(int argc, char **argv)
 	struct frame_struct *myFrame;
 	struct timeval tv;
 
+	int res = 0;
+
 	if (argc < 2)
 	{
 		fprintf(stderr, "Usage:\n");
@@ -64,6 +66,7 @@ int main(int argc, char **argv)
 		if (!myFrame)
 		{
 			fprintf(stderr, "Error finding Frame %s\n", frameName);
+			releaseResource(&dataBase);
 			exit(1);
 		}
 
@@ -73,6 +76,7 @@ int main(int argc, char **argv)
 			if (!mySignal)
 			{
 				fprintf(stderr, "Error finding Signal %s\n", signalName);
+				releaseResource(&dataBase);
 				exit(1);
 			}
 		}
@@ -98,15 +102,20 @@ int main(int argc, char **argv)
 				ascframe) != 4)
 		{
 			fprintf(stderr, "incorrect line format in logfile\n");
-			return 1;
+			res = 1;
+			goto err;
 		}
 
 		if (parse_canframe(ascframe, &cf))
 		{
-			return 1;
+			res = 1;
+			goto err;
 		}
 		processFrame(callbackList, &cf, tv, device);
 	}
 
-	return 0;
+	err:
+	releaseSignalCallbackResource(&callbackList);
+	releaseResource(&dataBase);
+	return res;
 }

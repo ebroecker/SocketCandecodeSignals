@@ -105,4 +105,22 @@ void processFrame(struct signal_callback_list *callbackList, struct can_frame *c
 	}
 }
 
+void releaseSignalCallbackResource(struct signal_callback_list **cb_list)
+{
+  struct signal_callback_list *signal_cb;
+  for (signal_cb = *cb_list; signal_cb != NULL;)
+  {
+    struct signal_callback_list *signal_cb_temp = signal_cb;
+    signal_cb = (struct signal_callback_list *)signal_cb->hh.next;
 
+    signal_cb_temp->frame = NULL;
+    signal_cb_temp->signal = NULL;
+    signal_cb_temp->callback = 0;
+    signal_cb_temp->rawValue = 0;
+    signal_cb_temp->onChange = 0;
+
+    HASH_DEL(*cb_list, signal_cb_temp);
+    free(signal_cb_temp);
+    signal_cb_temp = NULL;
+  }
+}
