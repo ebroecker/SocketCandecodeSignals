@@ -9,11 +9,11 @@ BU_:
 
 
 BO_ 1 testFrame1: 8 TEST_ECU
- SG_ sig0 : 1|2@0+ (1.0,0.0) [0|0] "" CCL_TEST 
- SG_ sig1 : 7|6@0+ (1.0,0.0) [0|0] "" CCL_TEST 
- SG_ sig2 : 15|11@0+ (1.0,0.0) [0|0] "" CCL_TEST 
- SG_ sig3 : 20|12@0+ (1.0,0.0) [0|0] "" CCL_TEST 
- SG_ sig4 : 24|9@0+ (1.0,0.0) [0|0] "" CCL_TEST 
+ SG_ sig0 M : 1|2@0+ (1.0,0.0) [0|0] "" CCL_TEST 
+ SG_ sig1 m1 : 7|6@0+ (1.0,0.0) [0|0] "" CCL_TEST 
+ SG_ sig2 m1 : 15|11@0+ (1.0,0.0) [0|0] "" CCL_TEST 
+ SG_ sig3 m2 : 20|12@0+ (1.0,0.0) [0|0] "" CCL_TEST 
+ SG_ sig4 m2 : 24|9@0+ (1.0,0.0) [0|0] "" CCL_TEST 
  SG_ sig5 : 50|3@0+ (1.0,0.0) [0|0] "" CCL_TEST 
  SG_ sig6 : 53|3@0+ (1.0,0.0) [0|0] "" CCL_TEST 
  SG_ sig7 : 47|10@0+ (1.0,0.0) [0|0] "" CCL_TEST 

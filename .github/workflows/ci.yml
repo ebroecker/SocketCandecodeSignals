@@ -1,0 +1,18 @@
+name: build-and-test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build and test
+        run: |
+          make
+          ./test.sh
+      - name: build and test with sanitizers
+        run: |
+          make clean
+          make CFLAGS="-O1 -g -Wall -Wextra -Wno-implicit-fallthrough -fsanitize=address,undefined"
+          ./test.sh
