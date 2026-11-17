@@ -447,7 +447,8 @@ void snprintf_can_error_frame(char *buf, size_t len, struct can_frame *cf,
 			      char* sep)
 {
 	canid_t class, mask;
-	int i, n = 0, classes = 0;
+	size_t i;
+	int n = 0, classes = 0;
 	char *defsep = ",";
 
 	if (!(cf->can_id & CAN_ERR_FLAG))

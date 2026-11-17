@@ -5,10 +5,14 @@
 void add_frame(struct frame_struct **db, canid_t canID, char *frameName) {
 	struct frame_struct *s;
 	s = malloc(sizeof(struct frame_struct));
+	if (NULL == s) {
+		fprintf(stderr, "out of memory\n");
+		return;
+	}
 	s->canID = canID;
 	s->signals = NULL;
-	strcpy(s->name, frameName);
-        s->isMultiplexed = 0;
+	snprintf(s->name, sizeof(s->name), "%s", frameName);
+	s->isMultiplexed = 0;
 	HASH_ADD_INT( *db, canID, s );
 }
 
@@ -60,9 +64,22 @@ void add_signal(struct frame_struct *db, int frameId, char *signalName, int star
 	struct signal_struct *newSignal;
 
 	frame = find_frame(db, frameId);
+	if (NULL == frame) {
+		fprintf(stderr, "Error: signal %s refers to unknown frame %d\n", signalName, frameId);
+		return;
+	}
 
 	newSignal = malloc(sizeof(struct signal_struct));
-	strcpy(newSignal->name, signalName);
+	if (NULL == newSignal) {
+		fprintf(stderr, "out of memory\n");
+		return;
+	}
+	snprintf(newSignal->name, sizeof(newSignal->name), "%s", signalName);
+	if (NULL != find_signal_by_name(frame, newSignal->name)) {
+		fprintf(stderr, "Warning: duplicate signal %s in frame %d, ignoring\n", signalName, frameId);
+		free(newSignal);
+		return;
+	}
 	newSignal->startBit = startBit;
 	newSignal->signalLength = signalLength;
 	newSignal->is_big_endian = is_big_endian;
@@ -80,8 +97,8 @@ void add_signal(struct frame_struct *db, int frameId, char *signalName, int star
         newSignal->isMultiplexer = isMultiplexer;
         newSignal->muxId = muxId;
 
-	strcpy(newSignal->unit, unit);
-	strcpy(newSignal->receiverList, receiverList);
+	snprintf(newSignal->unit, sizeof(newSignal->unit), "%s", unit);
+	snprintf(newSignal->receiverList, sizeof(newSignal->receiverList), "%s", receiverList);
 
 	HASH_ADD_STR( frame->signals, name, newSignal );
 }
@@ -183,16 +200,11 @@ void releaseResource(struct frame_struct **db)
 
       HASH_DEL(temp->signals, signal_temp);
       free(signal_temp);
-      signal_temp = NULL;
     }
 
     HASH_DEL(*db, temp);
-    free(temp->signals);
-    temp->signals = NULL;
     free(temp);
-    temp = NULL;
   }
 
-  free(*db);
   *db = NULL;
 }
