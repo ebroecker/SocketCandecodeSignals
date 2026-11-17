@@ -79,9 +79,11 @@ void processFrame(struct signal_callback_list *callbackList, struct can_frame *c
 		else
 		{
 			signal = callbackItem->signal;
-			if (callbackItem->frame->isMultiplexed && 2 == signal->isMultiplexer
-					&& (!muxerFound || signal->muxId != muxerVal))
-				continue; // signal not present for this multiplexer value
+			if (callbackItem->frame->isMultiplexed
+					&& (1 == signal->isMultiplexer
+							|| (2 == signal->isMultiplexer
+									&& (!muxerFound || signal->muxId != muxerVal))))
+				continue; // muxer already reported, or signal not in this mux group
 
 			value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 			if (callbackItem->onChange && callbackItem->rawValue == value)
