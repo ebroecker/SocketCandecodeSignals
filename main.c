@@ -26,7 +26,6 @@ int main(int argc, char **argv)
 	struct frame_struct *myFrame;
 	struct timeval tv;
 
-	int res = 0;
 
 	if (argc < 2)
 	{
@@ -95,27 +94,26 @@ int main(int argc, char **argv)
 		argv++;
 	}
 
-	while (fgets(buf, 99, stdin))
+	while (fgets(buf, sizeof(buf), stdin))
 	{
 
-		if (sscanf(buf, "(%ld.%ld) %s %s", &tv.tv_sec, &tv.tv_usec, device,
+		if (sscanf(buf, "(%ld.%ld) %99s %99s", &tv.tv_sec, &tv.tv_usec, device,
 				ascframe) != 4)
 		{
 			fprintf(stderr, "incorrect line format in logfile\n");
-			res = 1;
-			goto err;
+			continue;
 		}
 
 		if (parse_canframe(ascframe, &cf))
 		{
-			res = 1;
-			goto err;
+			fprintf(stderr, "could not parse frame %s\n", ascframe);
+			continue;
 		}
 		processFrame(callbackList, &cf, tv, device);
 	}
 
-	err:
+
 	releaseSignalCallbackResource(&callbackList);
 	releaseResource(&dataBase);
-	return res;
+	return 0;
 }

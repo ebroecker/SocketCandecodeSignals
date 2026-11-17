@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include "processFrame.h"
 #include "stdbool.h"
-#include "libcan-encode-decode/include/can_encode_decode_inl.h"
+#include "can_encode_decode_inl.h"
 
 float toPhysicalValue(uint64_t target, float factor, float offset,
 bool is_signed);
 uint64_t extractSignal(const uint8_t* frame, const uint8_t startbit, const uint8_t length, bool is_big_endian, bool is_signed);
+
 
 void add_callback(struct signal_callback_list **callbackList, struct frame_struct *frame, struct signal_struct *signal,
 		void (*callback)(char *, __u64, double, struct timeval, char *device), __u8 onChange)
@@ -30,77 +31,64 @@ void processFrame(struct signal_callback_list *callbackList, struct can_frame *c
 	__u64 value = 0;
 	double scaled = 0.;
 	unsigned int muxerVal = 0;
+	bool muxerFound = false;
 
 	for (callbackItem = callbackList; callbackItem != NULL; callbackItem = callbackItem->hh.next)
 	{
-		if (callbackItem->frame->canID == cf->can_id)
+		if (callbackItem->frame->canID != cf->can_id)
+			continue;
+
+		if (callbackItem->frame->isMultiplexed)
 		{
-			if (callbackItem->frame->isMultiplexed)
+			// find multiplexer and report its value:
+			for (signal = callbackItem->frame->signals; signal != NULL; signal = signal->hh.next)
 			{
-				// find multiplexer:
-				for (signal = callbackItem->frame->signals; signal != NULL; signal = signal->hh.next)
+				if (1 == signal->isMultiplexer)
 				{
-					if (1 == signal->isMultiplexer)
-					{
-						muxerVal = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
-						scaled = toPhysicalValue(muxerVal, signal->factor, signal->offset, signal->is_signed);
-						(callbackItem->callback)(signal->name, muxerVal, scaled, tv, device);
-						break;
-					}
+					value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
+					scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
+					muxerVal = (unsigned int) value;
+					muxerFound = true;
+					(callbackItem->callback)(signal->name, value, scaled, tv, device);
+					break;
 				}
 			}
+		}
 
-			if (callbackItem->signal == NULL)
+		if (callbackItem->signal == NULL)
+		{
+			// whole frame subscribed: report all signals
+			for (signal = callbackItem->frame->signals; signal != NULL; signal = signal->hh.next)
 			{
-				if (callbackItem->frame->isMultiplexed)
-				{
-					for (signal = callbackItem->frame->signals; signal != NULL; signal = signal->hh.next)
-					{
-						// decode not multiplexed signals and signals with correct muxVal
-						if (0 == signal->isMultiplexer || (2 == signal->isMultiplexer && signal->muxId == muxerVal))
-						{
-							value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
-							scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
-							(callbackItem->callback)(signal->name, value, scaled, tv, device);
-						}
-					}
+				if (1 == signal->isMultiplexer)
+					continue; // already reported above
+				// in multiplexed frames only decode plain signals and signals
+				// of the active multiplexer group
+				if (callbackItem->frame->isMultiplexed && 2 == signal->isMultiplexer
+						&& (!muxerFound || signal->muxId != muxerVal))
+					continue;
 
-				}
-				else
-				{
-					for (signal = callbackItem->frame->signals; signal != NULL; signal = signal->hh.next)
-					{
-						value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
-						scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
-						(callbackItem->callback)(signal->name, value, scaled, tv, device);
-					}
-				}
+				value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
+				if (callbackItem->onChange && callbackItem->rawValue == value)
+					continue;
+				callbackItem->rawValue = value;
+				scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
+				(callbackItem->callback)(signal->name, value, scaled, tv, device);
 			}
-			else
-			{
-				if (callbackItem->frame->isMultiplexed)
-				{
-					if (0 == callbackItem->signal->isMultiplexer || (2 == callbackItem->signal->isMultiplexer && callbackItem->signal->muxId == muxerVal))
-					{
-						value = extractSignal(cf->data, callbackItem->signal->startBit, callbackItem->signal->signalLength, (bool) callbackItem->signal->is_big_endian,
-								callbackItem->signal->is_signed);
-						scaled = toPhysicalValue(value, callbackItem->signal->factor, callbackItem->signal->offset, callbackItem->signal->is_signed);
-						callbackItem->rawValue = value;
-						(callbackItem->callback)(callbackItem->signal->name, value, scaled, tv, device);
-					}
-				}
-				else
-				{
-					if ((0 == callbackItem->onChange) || (callbackItem->rawValue != value))
-					{
-						value = extractSignal(cf->data, callbackItem->signal->startBit, callbackItem->signal->signalLength, (bool) callbackItem->signal->is_big_endian,
-								callbackItem->signal->is_signed);
-						scaled = toPhysicalValue(value, callbackItem->signal->factor, callbackItem->signal->offset, callbackItem->signal->is_signed);
-						callbackItem->rawValue = value;
-						(callbackItem->callback)(callbackItem->signal->name, value, scaled, tv, device);
-					}
-				}
-			}
+		}
+		else
+		{
+			signal = callbackItem->signal;
+			if (callbackItem->frame->isMultiplexed && 2 == signal->isMultiplexer
+					&& (!muxerFound || signal->muxId != muxerVal))
+				continue; // signal not present for this multiplexer value
+
+			value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
+			if (callbackItem->onChange && callbackItem->rawValue == value)
+				continue;
+			callbackItem->rawValue = value;
+			scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
+			(callbackItem->callback)(signal->name, value, scaled, tv, device);
 		}
 	}
 }
@@ -113,14 +101,7 @@ void releaseSignalCallbackResource(struct signal_callback_list **cb_list)
     struct signal_callback_list *signal_cb_temp = signal_cb;
     signal_cb = (struct signal_callback_list *)signal_cb->hh.next;
 
-    signal_cb_temp->frame = NULL;
-    signal_cb_temp->signal = NULL;
-    signal_cb_temp->callback = 0;
-    signal_cb_temp->rawValue = 0;
-    signal_cb_temp->onChange = 0;
-
     HASH_DEL(*cb_list, signal_cb_temp);
     free(signal_cb_temp);
-    signal_cb_temp = NULL;
   }
 }

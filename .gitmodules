@@ -1,4 +1,0 @@
-[submodule "libcan-encode-decode"]
-	path = libcan-encode-decode
-	url = https://github.com/reinzor/libcan-encode-decode.git 
-	branch = heads/master
